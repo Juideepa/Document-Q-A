@@ -18,8 +18,8 @@ from langchain_core.runnables import RunnablePassthrough
 # ---------------------------
 load_dotenv()
 
-groq_api_key = os.getenv("groq_api_key")
-google_api_key = os.getenv("google_api_key")
+groq_api_key = st.secrets["groq_api_key"]
+google_api_key = st.secrets["google_api_key"]
 
 os.environ["GOOGLE_API_KEY"] = google_api_key
 
@@ -107,3 +107,4 @@ if question and "vectors" in st.session_state:
     st.success(result.content)
 
     st.write(f"Response time: {end - start:.2f} seconds")
+
