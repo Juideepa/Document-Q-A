@@ -1,12 +1,12 @@
 import streamlit as st
 import os
 import time
-from dotenv import load_dotenv
+import tempfile
 
 from langchain_groq import ChatGroq
 from langchain_google_genai import GoogleGenerativeAIEmbeddings
 
-from langchain_community.document_loaders import PyPDFDirectoryLoader
+from langchain_community.document_loaders import PyPDFLoader
 from langchain_community.vectorstores import FAISS
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 
@@ -14,10 +14,17 @@ from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.runnables import RunnablePassthrough
 
 # ---------------------------
-# Load API keys
+# PAGE CONFIG
 # ---------------------------
-load_dotenv()
+st.set_page_config(
+    page_title="Smart Q&A Assistant",
+    page_icon="🤖",
+    layout="wide"
+)
 
+# ---------------------------
+# LOAD SECRETS (Cloud Safe)
+# ---------------------------
 groq_api_key = st.secrets["groq_api_key"]
 google_api_key = st.secrets["google_api_key"]
 
@@ -28,6 +35,7 @@ os.environ["GOOGLE_API_KEY"] = google_api_key
 # ---------------------------
 st.image("intelligent-agent.png", width=200)
 st.title("Your Smart Q&A Intelligent Assistant")
+st.markdown("Upload your PDF and ask questions from it instantly.")
 
 # ---------------------------
 # LLM
@@ -38,10 +46,11 @@ llm = ChatGroq(
 )
 
 # ---------------------------
-# Prompt template
+# PROMPT
 # ---------------------------
 prompt = ChatPromptTemplate.from_template("""
-Answer strictly from the context.
+Answer strictly from the context below.
+If the answer is not in the context, say "Answer not found in the document."
 
 <context>
 {context}
@@ -51,19 +60,30 @@ Question: {question}
 """)
 
 # ---------------------------
-# Vector embedding
+# FILE UPLOAD
 # ---------------------------
-def vector_embedding():
+uploaded_files = st.file_uploader(
+    "Upload your PDF file(s)",
+    type="pdf",
+    accept_multiple_files=True
+)
 
-    if "vectors" in st.session_state:
+# ---------------------------
+# VECTOR BUILD FUNCTION
+# ---------------------------
+def build_vector_store(files):
+
+    docs = []
+
+    for uploaded_file in files:
+        with tempfile.NamedTemporaryFile(delete=False) as tmp:
+            tmp.write(uploaded_file.read())
+            loader = PyPDFLoader(tmp.name)
+            docs.extend(loader.load())
+
+    if not docs:
+        st.error("No text found in uploaded PDFs.")
         return
-
-    embeddings = GoogleGenerativeAIEmbeddings(
-        model="gemini-embedding-001"
-    )
-
-    loader = PyPDFDirectoryLoader("./ed_pdf")
-    docs = loader.load()
 
     splitter = RecursiveCharacterTextSplitter(
         chunk_size=1000,
@@ -72,22 +92,31 @@ def vector_embedding():
 
     final_docs = splitter.split_documents(docs)
 
+    embeddings = GoogleGenerativeAIEmbeddings(
+        model="gemini-embedding-001"
+    )
+
     st.session_state.vectors = FAISS.from_documents(
         final_docs,
         embeddings
     )
 
-# ---------------------------
-# Input
-# ---------------------------
-question = st.text_input("Ask something about the document")
-
-if st.button("Load database"):
-    vector_embedding()
-    st.success("Database ready!")
+    st.success("PDF processed successfully! You can now ask questions.")
 
 # ---------------------------
-# Retrieval pipeline
+# PROCESS BUTTON
+# ---------------------------
+if uploaded_files:
+    if st.button("Process PDF"):
+        build_vector_store(uploaded_files)
+
+# ---------------------------
+# QUESTION INPUT
+# ---------------------------
+question = st.text_input("Ask something about your uploaded document")
+
+# ---------------------------
+# RETRIEVAL PIPELINE
 # ---------------------------
 if question and "vectors" in st.session_state:
 
@@ -107,4 +136,3 @@ if question and "vectors" in st.session_state:
     st.success(result.content)
 
     st.write(f"Response time: {end - start:.2f} seconds")
-
