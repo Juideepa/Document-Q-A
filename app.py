@@ -19,49 +19,70 @@ from langchain_core.runnables import RunnablePassthrough
 st.set_page_config(
     page_title="DocMind AI",
     page_icon="🤖",
-    layout="wide"
+    layout="centered"
 )
 
 # ---------------------------------------------------
-# CUSTOM CSS (Modern UI)
+# RESPONSIVE CSS
 # ---------------------------------------------------
 st.markdown("""
 <style>
 
-body {
-    background-color: #0e1117;
+.main {
+    padding-top: 30px;
 }
 
 .big-title {
-    font-size: 60px;
+    font-size: 42px;
     font-weight: 800;
     text-align: center;
     background: linear-gradient(90deg, #00c6ff, #0072ff);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
-    margin-bottom: 10px;
 }
 
 .subtitle {
-    font-size: 20px;
+    font-size: 18px;
     text-align: center;
     color: #9ca3af;
-    margin-bottom: 40px;
+    margin-bottom: 25px;
+}
+
+.center-img {
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+    width: 180px;
+    margin-bottom: 20px;
 }
 
 .card {
     background-color: #1c1f26;
-    padding: 25px;
-    border-radius: 15px;
+    padding: 20px;
+    border-radius: 12px;
     margin-bottom: 20px;
     border: 1px solid #2d2f36;
 }
 
 .response-card {
     background-color: #111827;
-    padding: 20px;
+    padding: 18px;
     border-radius: 12px;
     border: 1px solid #334155;
+    font-size: 16px;
+}
+
+/* Mobile responsive */
+@media (max-width: 768px) {
+    .big-title {
+        font-size: 28px;
+    }
+    .subtitle {
+        font-size: 14px;
+    }
+    .center-img {
+        width: 140px;
+    }
 }
 
 </style>
@@ -77,51 +98,58 @@ os.environ["GOOGLE_API_KEY"] = google_api_key
 # ---------------------------------------------------
 # HERO SECTION
 # ---------------------------------------------------
-st.markdown('<div class="big-title">DocMind AI - Your Intelligent Document Assistant</div>', unsafe_allow_html=True)
-st.markdown('<div class="subtitle">Turn Your Documents Into Conversations</div>', unsafe_allow_html=True)
+st.markdown('<div class="big-title">DocMind AI</div>', unsafe_allow_html=True)
+st.markdown('<div class="subtitle">Your Intelligent Document Assistant</div>', unsafe_allow_html=True)
+
+st.markdown(
+    '<img src="intelligent-agent.png" class="center-img">',
+    unsafe_allow_html=True
+)
 
 # ---------------------------------------------------
-# SIDEBAR UPLOAD
+# FILE UPLOAD SECTION
 # ---------------------------------------------------
-with st.sidebar:
-    st.header("📂 Upload Document")
-    uploaded_files = st.file_uploader(
-        "Upload PDF file(s)",
-        type="pdf",
-        accept_multiple_files=True
-    )
+st.markdown('<div class="card">', unsafe_allow_html=True)
 
-    if uploaded_files:
-        if st.button("⚡ Process Document"):
-            with st.spinner("Processing document..."):
-                docs = []
+uploaded_files = st.file_uploader(
+    "📂 Upload PDF file(s)",
+    type="pdf",
+    accept_multiple_files=True
+)
 
-                for uploaded_file in uploaded_files:
-                    with tempfile.NamedTemporaryFile(delete=False) as tmp:
-                        tmp.write(uploaded_file.read())
-                        loader = PyPDFLoader(tmp.name)
-                        docs.extend(loader.load())
+if uploaded_files:
+    if st.button("⚡ Process Document"):
+        with st.spinner("Processing document..."):
+            docs = []
 
-                if docs:
-                    splitter = RecursiveCharacterTextSplitter(
-                        chunk_size=1000,
-                        chunk_overlap=200
-                    )
+            for uploaded_file in uploaded_files:
+                with tempfile.NamedTemporaryFile(delete=False) as tmp:
+                    tmp.write(uploaded_file.read())
+                    loader = PyPDFLoader(tmp.name)
+                    docs.extend(loader.load())
 
-                    final_docs = splitter.split_documents(docs)
+            if docs:
+                splitter = RecursiveCharacterTextSplitter(
+                    chunk_size=1000,
+                    chunk_overlap=200
+                )
 
-                    embeddings = GoogleGenerativeAIEmbeddings(
-                        model="gemini-embedding-001"
-                    )
+                final_docs = splitter.split_documents(docs)
 
-                    st.session_state.vectors = FAISS.from_documents(
-                        final_docs,
-                        embeddings
-                    )
+                embeddings = GoogleGenerativeAIEmbeddings(
+                    model="gemini-embedding-001"
+                )
 
-                    st.success("✅ Document Ready!")
-                else:
-                    st.error("No readable content found.")
+                st.session_state.vectors = FAISS.from_documents(
+                    final_docs,
+                    embeddings
+                )
+
+                st.success("✅ Document Ready!")
+            else:
+                st.error("No readable content found.")
+
+st.markdown('</div>', unsafe_allow_html=True)
 
 # ---------------------------------------------------
 # LLM SETUP
@@ -143,7 +171,7 @@ Question: {question}
 """)
 
 # ---------------------------------------------------
-# QUESTION INPUT SECTION
+# QUESTION INPUT
 # ---------------------------------------------------
 st.markdown('<div class="card">', unsafe_allow_html=True)
 question = st.text_input("💬 Ask a question about your document")
@@ -162,7 +190,7 @@ if question and "vectors" in st.session_state:
         | llm
     )
 
-    with st.spinner("Thinking..."):
+    with st.spinner("🤖 Thinking..."):
         start = time.time()
         result = chain.invoke(question)
         end = time.time()
@@ -175,4 +203,3 @@ if question and "vectors" in st.session_state:
     """.format(result.content), unsafe_allow_html=True)
 
     st.write(f"⏱ Response time: {end - start:.2f} seconds")
-
