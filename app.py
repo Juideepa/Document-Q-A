@@ -34,7 +34,7 @@ os.environ["GOOGLE_API_KEY"] = google_api_key
 # UI
 # ---------------------------
 st.image("intelligent-agent.png", width=200)
-st.title("Your Smart Q&A Intelligent Assistant")
+st.title("DocMind AI - Your Intelligent Document Assistant")
 st.markdown("Upload your PDF and ask questions from it instantly.")
 
 # ---------------------------
@@ -136,5 +136,6 @@ if question and "vectors" in st.session_state:
     st.success(result.content)
 
     st.write(f"Response time: {end - start:.2f} seconds")
+
 
 
