@@ -77,7 +77,7 @@ os.environ["GOOGLE_API_KEY"] = google_api_key
 # ---------------------------------------------------
 # HERO SECTION
 # ---------------------------------------------------
-st.markdown('<div class="big-title">DocMind AI</div>', unsafe_allow_html=True)
+st.markdown('<div class="big-title">DocMind AI - Your Intelligent Document Assistant</div>', unsafe_allow_html=True)
 st.markdown('<div class="subtitle">Turn Your Documents Into Conversations</div>', unsafe_allow_html=True)
 
 # ---------------------------------------------------
@@ -175,3 +175,4 @@ if question and "vectors" in st.session_state:
     """.format(result.content), unsafe_allow_html=True)
 
     st.write(f"⏱ Response time: {end - start:.2f} seconds")
+
