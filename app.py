@@ -13,41 +13,29 @@ from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.runnables import RunnablePassthrough
 
-# ---------------------------
-# PAGE CONFIG
-# ---------------------------
 st.set_page_config(
     page_title="Smart Q&A Assistant",
     page_icon="🤖",
     layout="wide"
 )
 
-# ---------------------------
-# LOAD SECRETS (Cloud Safe)
-# ---------------------------
 groq_api_key = st.secrets["groq_api_key"]
 google_api_key = st.secrets["google_api_key"]
 
 os.environ["GOOGLE_API_KEY"] = google_api_key
 
-# ---------------------------
 # UI
-# ---------------------------
 st.image("intelligent-agent.png", width=200)
 st.title("DocMind AI - Your Intelligent Document Assistant")
 st.markdown("Upload your PDF and ask questions from it instantly.")
 
-# ---------------------------
 # LLM
-# ---------------------------
 llm = ChatGroq(
     groq_api_key=groq_api_key,
     model_name="openai/gpt-oss-120b"
 )
 
-# ---------------------------
 # PROMPT
-# ---------------------------
 prompt = ChatPromptTemplate.from_template("""
 Answer strictly from the context below.
 If the answer is not in the context, say "Answer not found in the document."
@@ -68,9 +56,8 @@ uploaded_files = st.file_uploader(
     accept_multiple_files=True
 )
 
-# ---------------------------
 # VECTOR BUILD FUNCTION
-# ---------------------------
+
 def build_vector_store(files):
 
     docs = []
@@ -110,14 +97,10 @@ if uploaded_files:
     if st.button("Process PDF"):
         build_vector_store(uploaded_files)
 
-# ---------------------------
 # QUESTION INPUT
-# ---------------------------
 question = st.text_input("Ask something about your uploaded document")
 
-# ---------------------------
 # RETRIEVAL PIPELINE
-# ---------------------------
 if question and "vectors" in st.session_state:
 
     retriever = st.session_state.vectors.as_retriever()
@@ -136,3 +119,4 @@ if question and "vectors" in st.session_state:
     st.success(result.content)
 
     st.write(f"Response time: {end - start:.2f} seconds") 
+
