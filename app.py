@@ -97,10 +97,23 @@ if uploaded_files:
     if st.button("Process PDF"):
         build_vector_store(uploaded_files)
 
+# ---------------------------
 # QUESTION INPUT
-question = st.text_input("Ask something about your uploaded document")
+# ---------------------------
+if "vectors" not in st.session_state:
+    st.info("📄 Please upload and process a PDF before asking a question.")
+    question = st.text_input(
+        "Ask something about your uploaded document",
+        disabled=True
+    )
+else:
+    question = st.text_input(
+        "Ask something about your uploaded document"
+    )
 
+# ---------------------------
 # RETRIEVAL PIPELINE
+# ---------------------------
 if question and "vectors" in st.session_state:
 
     retriever = st.session_state.vectors.as_retriever()
@@ -111,12 +124,12 @@ if question and "vectors" in st.session_state:
         | llm
     )
 
-    start = time.time()
-    result = chain.invoke(question)
-    end = time.time()
+    with st.spinner("Thinking..."):
+        start = time.time()
+        result = chain.invoke(question)
+        end = time.time()
 
     st.markdown("### AI Response")
     st.success(result.content)
 
-    st.write(f"Response time: {end - start:.2f} seconds") 
-
+    st.write(f"Response time: {end - start:.2f} seconds")
